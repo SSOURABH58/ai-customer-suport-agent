@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Send, StopCircle } from "lucide-react";
+import { Send, Square, StopCircle } from "lucide-react";
 
 interface Message {
   content: string;
@@ -21,7 +21,7 @@ export default function Home() {
 
     setMessages([...messages, { content: input, isUser: true }]);
     setIsLoading(true);
-    
+
     // Simulate AI response
     setTimeout(() => {
       setMessages((prev) => [
@@ -41,27 +41,33 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto">
-        <Card className="flex flex-col h-full border-2 border-primary/50 hover:border-primary transition-all duration-300 animate-pulse">
+        <Card className="flex flex-col h-full border-2 border-primary/50  transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
-              <p className="text-center text-gray-500 pt-8">Send a message to start chatting</p>
+              <p className="text-center text-gray-500 pt-8">
+                Send a message to start chatting
+              </p>
             ) : (
               messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
+                  className={`flex ${
+                    message.isUser ? "justify-end" : "justify-start"
+                  }`}
                 >
                   <div
-                    className={`max-w-[80%] p-4 rounded-lg ${message.isUser
-                      ? "bg-primary text-primary-foreground rounded-tr-none"
-                      : "bg-muted text-muted-foreground rounded-tl-none"}`}
+                    className={`max-w-[80%] p-4 rounded-lg ${
+                      message.isUser
+                        ? "bg-primary text-primary-foreground rounded-tr-none"
+                        : "bg-muted text-muted-foreground rounded-tl-none"
+                    }`}
                   >
                     {message.content}
                   </div>
                 </div>
               ))
             )}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] p-4 rounded-lg bg-muted text-muted-foreground rounded-tl-none">
@@ -87,13 +93,13 @@ export default function Home() {
             <Button
               onClick={isLoading ? handleStopResponse : handleSend}
               disabled={!isLoading && input.trim() === ""}
-              className="text-primary-foreground"
+              className="bg-background"
               size="icon"
             >
               {isLoading ? (
-                <StopCircle className="h-5 w-5" />
+                <Square className="h-5 w-5 text-primary" color="#10a37f" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-5 w-5 text-primary" color="#10a37f" />
               )}
             </Button>
           </div>
