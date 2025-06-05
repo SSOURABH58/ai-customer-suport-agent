@@ -34,12 +34,31 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication process
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Handle successful login
+        console.log("Authenticated user:", data.user);
+        localStorage.setItem("authToken", data.token);
+        // Redirect or update state here
+      } else {
+        // Handle error
+        setPasswordError(data.message || "Authentication failed");
+      }
+    } catch (error) {
+      setPasswordError("Network error, please try again");
+    } finally {
       setIsLoading(false);
-      // Redirect or show success message
-      console.log("Login attempted with:", { username, password });
-    }, 1500);
+    }
   };
 
   const isFormValid = username.length >= 3 && password.length >= 8;
