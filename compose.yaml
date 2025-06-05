@@ -18,12 +18,12 @@ services:
       timeout: 5s
       retries: 3
 
-  next:
-    build: .
-    environment:
-      MONGODB_URI: mongodb://root:example@mongo:27017/
-    ports:
-      - "3000:3000"
+  # next:
+  #   build: .
+  #   environment:
+  #     MONGODB_URI: mongodb://root:example@mongo:27017/
+  #   ports:
+  #     - "3000:3000"
 
   mongo-express:
     image: mongo-express
