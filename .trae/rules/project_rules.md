@@ -2,6 +2,7 @@ Its an AI Chat Support app
 UI
 Use shadcn for all ui components if they are their show to command to add them
 use the `npx shadcn@latest add` command for adding in new components
+we are using tailwind v4 so use the new animation config
 
 Keep the UI consistent across pages
 

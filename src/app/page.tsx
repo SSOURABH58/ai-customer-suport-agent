@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Send, Square, StopCircle } from "lucide-react";
+import { LogOut, Send, Square, StopCircle } from "lucide-react";
 
 interface Message {
   content: string;
@@ -39,9 +39,19 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto">
-        <Card className="flex flex-col h-full border-2 border-primary/50  transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
+    <div className=" relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <div className=" absolute z-10 md:top-10 md:left-10 top-1 left-2 md:w-4 w-full md:-rotate-90 ">
+        <div className="absolute md:right-0 md:bottom-0  flex flex-row items-center justify-center space-y-2  transform-origen-1 ">
+          <button className="flex flex-row active:text-white items-center justify-center text-gray-500 hover:text-red-500 transition-colors duration-200 opacity-50 hover:opacity-100 m-0 mr-1 cursor-pointer">
+            <LogOut className="h-5 w-5" />
+          </button>
+          <p className=" text-lg  opacity-70 font-black uppercase text-gray-800 dark:text-gray-200 top-0 left-0">
+            Username
+          </p>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto md:p-8 relative ">
+        <Card className="flex flex-col h-full border-2  transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
               <p className="text-center text-gray-500 pt-8">
