@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AuthPage() {
@@ -13,6 +16,8 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
+  const router = useRouter();
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const fieldName = e.target.name;
@@ -35,21 +40,19 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
+      const response = await axios.post("/api/auth", {
+        username,
+        password,
       });
 
-      const data = await response.json();
+      const data = await response.data();
 
       if (data.success) {
         // Handle successful login
         console.log("Authenticated user:", data.user);
         localStorage.setItem("authToken", data.token);
         // Redirect or update state here
+        router.push("/");
       } else {
         // Handle error
         setPasswordError(data.message || "Authentication failed");
