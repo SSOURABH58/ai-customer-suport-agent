@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 
 // Generate token function
 export function generateToken(payload: object) {
-  return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "60s" });
+  return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "1d" });
 }
 
 // Local strategy for username/password login
@@ -33,6 +33,8 @@ passport.use(
             salt,
           });
           // return done(null, newUser);
+          const token = generateToken({ username, id: newUser._id });
+          return done(null, { username, id: newUser._id, token });
         } else {
           //Login
           const hashedPassword = await bcrypt.hash(password, user.salt);
@@ -41,9 +43,8 @@ passport.use(
           }
           // return done(null, user);
         }
-        const token = generateToken({ username });
-
-        return done(null, { username, token });
+        const token = generateToken({ username, id: user._id });
+        return done(null, { username, id: user._id, token });
       } catch (err) {
         return done(err);
       }
@@ -57,8 +58,11 @@ passport.use(
     {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: process.env.JWT_SECRET || "🤫",
+      passReqToCallback: true,
     },
     async (jwtPayload, done) => {
+      console.log("jwtPayload", jwtPayload);
+
       try {
         const user = await User.findOne({ username: jwtPayload.username });
         user ? done(null, user) : done(null, false);

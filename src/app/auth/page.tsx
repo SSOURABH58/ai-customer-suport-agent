@@ -36,7 +36,8 @@ export default function AuthPage() {
       if (response.status === 200) {
         // Check status code instead of success property
         console.log("Authenticated user:", data.user);
-        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("authToken", data.user.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
         router.push("/");
       } else {
         setSubmitError(data.message || "Authentication failed");

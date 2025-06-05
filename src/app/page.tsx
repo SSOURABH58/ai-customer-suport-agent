@@ -1,42 +1,127 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { LogOut, Send, Square, StopCircle } from "lucide-react";
+import axios from "axios";
 
 interface Message {
   content: string;
   isUser: boolean;
 }
 
+const axiosInstance = axios.create();
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [chatId, setChatId] = useState(null);
+  const [user, setUser] = useState<null | any>(null);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (input.trim() === "") return;
 
     setMessages([...messages, { content: input, isUser: true }]);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { content: "AI response here", isUser: false },
-      ]);
+    try {
+      const response = await fetch(`/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        body: JSON.stringify({ chatId, message: input }),
+      });
       setIsLoading(false);
-    }, 1000);
+      const reader = response.body?.getReader();
+      if (!reader) return;
+      const decoder = new TextDecoder("utf-8");
 
-    setInput("");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        // console.log(chunk);
+        // const jsonString = chunk.match(/{[\s\S]*}/)?.[0];
+        // console.log(jsonString);
+
+        // const parsedChunk = JSON.parse(jsonString ?? "{}");
+
+        setMessages((prev) => [
+          ...prev,
+          { content: value.choices[0]?.delta?.content, isUser: false },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
+      setInput("");
+    }
+  };
+
+  const createNewChat = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.post(`/api/chat`, {});
+
+      setMessages([
+        { content: response.data.messages[1].content, isUser: false },
+      ]);
+      // localStorage.setItem("user", response.data.chatId);
+      console.log(response.data);
+
+      return response.data._id;
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
+      setInput("");
+    }
   };
 
   const handleStopResponse = () => {
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    console.log(user, token);
+
+    if (token) {
+      axiosInstance.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${token}`;
+    }
+    if (user) {
+      if (!user.chats?.length) {
+        (async () => {
+          const newChatID = await createNewChat();
+          setChatId(newChatID);
+          localStorage.setItem(
+            "user",
+            JSON.stringify({ ...user, chats: [newChatID] })
+          ); // Update the user object with the new chatId and save it to localStorage
+          setUser({ ...user, chats: [newChatID] }); // Update the user object with the new chatId and save it to localStorage
+        })();
+      } else {
+        console.log(user);
+
+        setUser(user);
+        setChatId(user.chats[0]);
+      }
+    }
+
+    return () => {
+      delete axiosInstance.defaults.headers.common["Authorization"];
+    };
+  }, []);
 
   return (
     <div className=" relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
@@ -46,7 +131,7 @@ export default function Home() {
             <LogOut className="h-5 w-5" />
           </button>
           <p className=" text-lg  opacity-70 font-black uppercase text-gray-800 dark:text-gray-200 top-0 left-0">
-            Username
+            {user?.username ?? "Loading..."}
           </p>
         </div>
       </div>

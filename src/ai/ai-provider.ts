@@ -10,6 +10,8 @@ export async function handleAIResponse(
   onChunk: (content: string) => void,
   onComplete: (fullResponse: string) => void
 ) {
+  console.log(messages);
+
   let fullContent = "";
 
   const openai = new OpenAI({

@@ -16,6 +16,10 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    chats: [{
+      type: Schema.Types.ObjectId,
+      ref: "Chat"
+    }]
   },
   {
     timestamps: true, // Adds createdAt and updatedAt automatically
