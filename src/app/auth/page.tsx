@@ -16,28 +16,14 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [submitError, setSubmitError] = useState(""); // Add new state for submission errors
 
   const router = useRouter();
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const fieldName = e.target.name;
-    switch (fieldName) {
-      case "username":
-        setUsernameError(
-          username.length <= 3 ? "Username must be more than 3 characters" : ""
-        );
-        break;
-      case "password":
-        setPasswordError(
-          password.length < 8 ? "Password must be 8 or more characters" : ""
-        );
-        break;
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setSubmitError(""); // Clear previous errors
 
     try {
       const response = await axios.post("/api/auth", {
@@ -45,22 +31,42 @@ export default function AuthPage() {
         password,
       });
 
-      const data = await response.data();
+      const data = response.data; // Remove .data() as it's not needed
 
-      if (data.success) {
-        // Handle successful login
+      if (response.status === 200) {
+        // Check status code instead of success property
         console.log("Authenticated user:", data.user);
         localStorage.setItem("authToken", data.token);
-        // Redirect or update state here
         router.push("/");
       } else {
-        // Handle error
-        setPasswordError(data.message || "Authentication failed");
+        setSubmitError(data.message || "Authentication failed");
       }
     } catch (error) {
-      setPasswordError("Network error, please try again");
+      if (axios.isAxiosError(error)) {
+        setSubmitError(
+          error.response?.data?.message || "Network error, please try again"
+        );
+      } else {
+        setSubmitError("An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const fieldName = e.target.name;
+    switch (fieldName) {
+      case "username":
+        setUsernameError(
+          username.length < 3 ? "Username must be more than 3 characters" : ""
+        );
+        break;
+      case "password":
+        setPasswordError(
+          password.length < 8 ? "Password must be 8 or more characters" : ""
+        );
+        break;
     }
   };
 
@@ -146,6 +152,13 @@ export default function AuthPage() {
                 "Login / Signup"
               )}
             </Button>
+
+            {/* Add error message display */}
+            {submitError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
 
             <div className="text-center">
               <Link

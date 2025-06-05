@@ -15,7 +15,7 @@ export async function connectToDB() {
 
   if (!cached.promise) {
     cached.promise = await mongoose.connect(MONGODB_URI, {
-      dbName: "b2b-marketplace",
+      dbName: "aiChatSupport",
     });
   }
 

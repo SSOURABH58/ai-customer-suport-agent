@@ -1,12 +1,10 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import User from "../db/models/user";
-import { connectToDB } from "../db/mongo";
+import { User } from "../db/models/user";
+// import { connectToDB } from "../db/mongo";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
-connectToDB();
 
 // Generate token function
 export function generateToken(payload: object) {
@@ -21,6 +19,8 @@ passport.use(
       passwordField: "password",
     },
     async (username, password, done) => {
+      console.log("Hi1 ", username, password);
+
       try {
         const user = await User.findOne({ username });
         if (!user) {
