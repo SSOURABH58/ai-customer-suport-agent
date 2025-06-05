@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { LogOut, Send, Square, StopCircle } from "lucide-react";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   content: string;
@@ -20,6 +21,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState(null);
   const [user, setUser] = useState<null | any>(null);
+  // const streamingMessage = useRef()
+  const [streamedMessage, setStreamedMessage] = useState("");
 
   const handleSend = async () => {
     if (input.trim() === "") return;
@@ -37,25 +40,16 @@ export default function Home() {
         body: JSON.stringify({ chatId, message: input }),
       });
       setIsLoading(false);
-      const reader = response.body?.getReader();
-      if (!reader) return;
-      const decoder = new TextDecoder("utf-8");
-
+      if (response.body === null) return;
+      const reader = response.body
+        .pipeThrough(new TextDecoderStream())
+        .getReader();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        // console.log(chunk);
-        // const jsonString = chunk.match(/{[\s\S]*}/)?.[0];
-        // console.log(jsonString);
-
-        // const parsedChunk = JSON.parse(jsonString ?? "{}");
-
-        setMessages((prev) => [
-          ...prev,
-          { content: value.choices[0]?.delta?.content, isUser: false },
-        ]);
+        if (value) {
+          setStreamedMessage((p) => p + value);
+        }
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -157,12 +151,20 @@ export default function Home() {
                         : "bg-muted text-muted-foreground rounded-tl-none"
                     }`}
                   >
-                    {message.content}
+                    <ReactMarkdown children={message.content} />
                   </div>
                 </div>
               ))
             )}
-
+            {streamedMessage && (
+              <div className={`flex justify-start`}>
+                <div
+                  className={`max-w-[80%] p-4 rounded-lg bg-muted text-muted-foreground rounded-tl-none`}
+                >
+                  <ReactMarkdown children={streamedMessage} />
+                </div>
+              </div>
+            )}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] p-4 rounded-lg bg-muted text-muted-foreground rounded-tl-none">

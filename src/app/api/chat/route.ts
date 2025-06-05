@@ -47,7 +47,8 @@ export async function POST(req: Request) {
   handleAIResponse(
     newChat.messages,
     (chunk) => {
-      writer.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      // chunk is a string
+      writer.write(chunk);
     },
     async (fullResponse) => {
       chat.messages.push({ role: "assistant", content: fullResponse });
