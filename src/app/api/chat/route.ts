@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
   const { chatId, message } = await req.json();
 
-  if (!chatId) {
+  if (!chatId && userId) {
     const chat = await createNewChat(userId);
     return new Response(JSON.stringify(chat), {
       headers: { "Content-Type": "application/json" },
@@ -73,13 +73,10 @@ export async function GET(req: Request) {
   const chatId = Object.fromEntries(searchParams.entries()).chatId;
   //@ts-ignore
   const user = await User.findById(req.headers.get("x-user-id"));
-  console.log(
-    user.chats.map((v) => String(v)),
-    chatId,
-    searchParams
-  );
 
-  if (!user.chats.map((v) => String(v)).includes(chatId)) {
+  if (
+    !user.chats.map((v: mongoose.Types.ObjectId) => String(v)).includes(chatId)
+  ) {
     return new Response("Unauthorized", { status: 401 });
   }
 
