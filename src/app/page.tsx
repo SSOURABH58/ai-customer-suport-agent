@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { LogOut, Send, Square, StopCircle } from "lucide-react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
+import Profile from "@/components/profile";
 
 interface Message {
   content: string;
@@ -21,13 +22,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState(null);
   const [user, setUser] = useState<null | any>(null);
-  // const streamingMessage = useRef()
   const [streamedMessage, setStreamedMessage] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const handleSend = async () => {
     if (input.trim() === "") return;
 
     setMessages([...messages, { content: input, isUser: true }]);
+    setInput("");
     setIsLoading(true);
 
     try {
@@ -40,6 +42,7 @@ export default function Home() {
         body: JSON.stringify({ chatId, message: input }),
       });
       setIsLoading(false);
+      setIsStreaming(true);
       if (response.body === null) return;
       const reader = response.body
         .pipeThrough(new TextDecoderStream())
@@ -51,6 +54,7 @@ export default function Home() {
           setStreamedMessage((p) => p + value);
         }
       }
+      setIsStreaming(false);
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
@@ -79,9 +83,39 @@ export default function Home() {
     }
   };
 
-  const handleStopResponse = () => {
-    setIsLoading(false);
+  const getChat = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chat?chatId=${chatId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch chat messages");
+      }
+
+      const data = await response.json();
+      const filteredMessages = data
+        .filter((message: any) => message.role !== "system")
+        .map((message: any) => ({
+          ...message,
+          isUser: message.role === "user",
+        }));
+      setMessages(filteredMessages);
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+    }
   };
+
+  useEffect(() => {
+    if (!isStreaming && streamedMessage) {
+      setMessages((p) => [...p, { content: streamedMessage, isUser: false }]);
+      setStreamedMessage("");
+    }
+  }, [isStreaming, streamedMessage]);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -106,9 +140,11 @@ export default function Home() {
         })();
       } else {
         console.log(user);
+        const latestChat = user.chats[user.chats.length - 1];
+        getChat(latestChat);
 
         setUser(user);
-        setChatId(user.chats[0]);
+        setChatId(latestChat);
       }
     }
 
@@ -119,16 +155,7 @@ export default function Home() {
 
   return (
     <div className=" relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      <div className=" absolute z-10 md:top-10 md:left-10 top-1 left-2 md:w-4 w-full md:-rotate-90 ">
-        <div className="absolute md:right-0 md:bottom-0  flex flex-row items-center justify-center space-y-2  transform-origen-1 ">
-          <button className="flex flex-row active:text-white items-center justify-center text-gray-500 hover:text-red-500 transition-colors duration-200 opacity-50 hover:opacity-100 m-0 mr-1 cursor-pointer">
-            <LogOut className="h-5 w-5" />
-          </button>
-          <p className=" text-lg  opacity-70 font-black uppercase text-gray-800 dark:text-gray-200 top-0 left-0">
-            {user?.username ?? "Loading..."}
-          </p>
-        </div>
-      </div>
+      <Profile username={user?.username} />
       <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto md:p-8 relative ">
         <Card className="flex flex-col h-full border-2  transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -188,16 +215,17 @@ export default function Home() {
               disabled={isLoading}
             />
             <Button
-              onClick={isLoading ? handleStopResponse : handleSend}
-              disabled={!isLoading && input.trim() === ""}
-              className="bg-background"
+              onClick={handleSend}
+              disabled={isLoading || input.trim() === "" || isStreaming}
+              className="bg-background disabled:opacity-50"
               size="icon"
             >
-              {isLoading ? (
+              <Send className="h-5 w-5 text-primary" color="#10a37f" />
+              {/* {isLoading ? (
                 <Square className="h-5 w-5 text-primary" color="#10a37f" />
               ) : (
                 <Send className="h-5 w-5 text-primary" color="#10a37f" />
-              )}
+              )} */}
             </Button>
           </div>
         </Card>

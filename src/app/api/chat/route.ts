@@ -67,13 +67,19 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  await connectToDB();
   const { searchParams } = new URL(req.url);
   //@ts-ignore
-  const { chatId } = searchParams;
+  const chatId = Object.fromEntries(searchParams.entries()).chatId;
   //@ts-ignore
-  const user = await User.findById(req.userId);
+  const user = await User.findById(req.headers.get("x-user-id"));
+  console.log(
+    user.chats.map((v) => String(v)),
+    chatId,
+    searchParams
+  );
 
-  if (!user.chats.includes(chatId)) {
+  if (!user.chats.map((v) => String(v)).includes(chatId)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
