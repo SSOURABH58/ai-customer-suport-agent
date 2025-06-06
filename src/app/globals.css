@@ -3,6 +3,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* width */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #ffffff1f;
+  border-radius: 10px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff52;
+}
+
 @theme inline {
   --animate-border-pulse: border-pulse 1s ease-in-out infinite;
   --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;

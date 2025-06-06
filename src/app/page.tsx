@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Ref, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -24,6 +24,15 @@ export default function Home() {
   const [user, setUser] = useState<null | any>(null);
   const [streamedMessage, setStreamedMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+    setIsUserAtBottom(nearBottom);
+  };
 
   const handleSend = async () => {
     if (input.trim() === "") return;
@@ -111,6 +120,21 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", handleScroll);
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    console.log(el?.scrollHeight);
+
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, streamedMessage, isLoading]);
+
+  useEffect(() => {
     if (!isStreaming && streamedMessage) {
       setMessages((p) => [...p, { content: streamedMessage, isUser: false }]);
       setStreamedMessage("");
@@ -119,6 +143,9 @@ export default function Home() {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
+    if (!token) {
+      window.location.href = "/auth";
+    }
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     console.log(user, token);
 
@@ -158,7 +185,10 @@ export default function Home() {
       <Profile username={user?.username} />
       <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto md:p-8 relative ">
         <Card className="flex flex-col h-full border-2  transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+            ref={containerRef}
+          >
             {messages.length === 0 ? (
               <p className="text-center text-gray-500 pt-8">
                 Send a message to start chatting
@@ -172,13 +202,29 @@ export default function Home() {
                   }`}
                 >
                   <div
-                    className={`max-w-[80%] p-4 rounded-lg ${
+                    className={`max-w-[80%] p-4 rounded-lg text-wrap ${
                       message.isUser
                         ? "bg-primary text-primary-foreground rounded-tr-none"
                         : "bg-muted text-muted-foreground rounded-tl-none"
                     }`}
                   >
-                    <ReactMarkdown children={message.content} />
+                    <ReactMarkdown
+                      components={{
+                        pre: ({ node, ...props }) => (
+                          <pre
+                            className="whitespace-pre-wrap overflow-x-auto break-words"
+                            {...props}
+                          />
+                        ),
+                        code: ({ node, ...props }) => (
+                          <code
+                            className="whitespace-pre-wrap break-words"
+                            {...props}
+                          />
+                        ),
+                      }}
+                      children={message.content}
+                    />
                   </div>
                 </div>
               ))
