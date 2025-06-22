@@ -1,5 +1,3 @@
----
-
 # AI Customer Support Agent
 
 ## How to Run
@@ -28,5 +26,3 @@
 - **Frontend**: Built with Tailwind CSS.
 - **OpenRouter API**: Integrated with OpenAI TypeScript API.
 - **Chat Stream**: Supports real-time chat streaming.
-
----
