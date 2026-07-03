@@ -90,7 +90,7 @@ export default function Home() {
         targetChatId = chatObj._id;
         setChatId(targetChatId);
 
-        const updatedUser = { ...user, chats: [...(user?.chats || []), targetChatId] };
+        const updatedUser = { ...user, chats: [...(user?.chats || []), targetChatId as string] };
         setUser(updatedUser);
         localStorage.setItem("user", JSON.stringify(updatedUser));
       } catch (error) {
