@@ -1,39 +1,16 @@
-# Use root/example as user/password credentials
+# Single-container deployment.
+# MongoDB runs inside the same container as Next.js (see Dockerfile + docker-entrypoint.sh).
+# Only secrets that cannot be baked into the image are kept here.
 
 services:
-
-  mongo:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - ./mongo-data:/data/db
-    ports:
-      - 27017:27017
-    healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
   next:
     build: .
-    environment:
-      MONGODB_URI: ${MONGODB_URI}
-      JWT_SECRET: ${JWT_SECRET}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    restart: unless-stopped
     ports:
       - "3000:3000"
-
-  mongo-express:
-    image: mongo-express
-    restart: always
-    ports:
-      - 8081:8081
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
-      ME_CONFIG_BASICAUTH: false
+      # MONGODB_URI is already baked into the image as a default.
+      # Set it here ONLY if you want to point to an external MongoDB.
+      # MONGODB_URI: mongodb://127.0.0.1:27017/
+      JWT_SECRET: ${JWT_SECRET}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
