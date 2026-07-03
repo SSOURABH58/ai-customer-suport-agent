@@ -135,7 +135,12 @@ export async function POST(req: Request) {
       writer.close();
     },
     model
-  );
+  ).catch(async (err) => {
+    console.error("Error in background AI response handler:", err);
+    try {
+      await writer.close();
+    } catch {}
+  });
 
   sessionCounts.set(sessionId, currentCount + 1);
 
