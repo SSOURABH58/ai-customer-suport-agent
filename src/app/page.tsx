@@ -37,7 +37,7 @@ export default function Home() {
     const res = await fetch(`/api/chat?chatId=${cid}`, {
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": user?.id || "",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -67,7 +67,7 @@ export default function Home() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": user?.id || "",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ chatId: null }),
         });
@@ -111,7 +111,7 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user?.id || "",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ chatId: targetChatId, message: userMessage }),
       });
