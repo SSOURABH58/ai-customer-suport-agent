@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 
-// Default to local MongoDB running inside the same container.
-// Override via MONGODB_URI environment variable only if needed (e.g. Atlas).
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/";
+const MONGODB_URI = "mongodb://127.0.0.1:27017/";
 
 let cached = (global as any).mongoose || { conn: null, promise: null };
 

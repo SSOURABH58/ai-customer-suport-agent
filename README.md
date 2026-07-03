@@ -2,14 +2,11 @@
 
 ## How to Run
 
-1. **Set Environment Variables**: Ensure the following environment variables are set:
-
-   - `MONGODB_URI` 
-   ```bash
-   mongodb://root:example@localhost:27017/
-   ```
+1. **Environment Variables**
    - `JWT_SECRET`
    - `OPENROUTER_API_KEY`
+
+   MongoDB runs inside the same container, so `MONGODB_URI` is provided by the image.
 
 2. **Download Docker Desktop**: If you don't have Docker Desktop installed, download it from [Docker's official site](https://www.docker.com/products/docker-desktop).
 
