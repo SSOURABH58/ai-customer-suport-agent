@@ -50,12 +50,55 @@ export default function Home() {
   };
 
   const handleSend = async () => {
-    if (input.trim() === "" || !chatId) return;
+    if (input.trim() === "") return;
 
     const token = localStorage.getItem("authToken");
     if (!token) {
       window.location.href = "/auth";
       return;
+    }
+
+    let targetChatId = chatId;
+
+    if (!targetChatId) {
+      setIsLoading(true);
+      try {
+        const createRes = await fetch(`/api/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": user?.id || "",
+          },
+          body: JSON.stringify({ chatId: null }),
+        });
+
+        if (createRes.status === 403) {
+          const payload = await createRes.json().catch(() => ({}));
+          if (payload?.message === "Limit Reached") {
+            setLimitDialog(true);
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        if (!createRes.ok) {
+          setIsLoading(false);
+          return;
+        }
+
+        const chatObj = await createRes.json();
+        targetChatId = chatObj._id;
+        setChatId(targetChatId);
+
+        const updatedUser = { ...user, chats: [...(user?.chats || []), targetChatId] };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      } catch (error) {
+        console.error("Error creating chat:", error);
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(false);
     }
 
     const userMessage = input;
@@ -70,7 +113,7 @@ export default function Home() {
           "Content-Type": "application/json",
           "x-user-id": user?.id || "",
         },
-        body: JSON.stringify({ chatId, message: userMessage }),
+        body: JSON.stringify({ chatId: targetChatId, message: userMessage }),
       });
 
       if (response.status === 403) {
