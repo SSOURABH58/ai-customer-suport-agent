@@ -135,13 +135,17 @@ export default function Home() {
       const reader = response.body
         .pipeThrough(new TextDecoderStream())
         .getReader();
+      let fullMessage = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         if (value) {
-          setStreamedMessage((p) => p + value);
+          fullMessage += value;
+          setStreamedMessage(fullMessage);
         }
       }
+      setMessages((p) => [...p, { content: fullMessage, isUser: false }]);
+      setStreamedMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
