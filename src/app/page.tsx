@@ -25,7 +25,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
-  const [user, setUser] = useState<{ username?: string; chats?: string[] } | null>(null);
+  const [user, setUser] = useState<{ id?: string; username?: string; chats?: string[] } | null>(null);
   const [streamedMessage, setStreamedMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [limitDialog, setLimitDialog] = useState(false);
@@ -37,7 +37,7 @@ export default function Home() {
     const res = await fetch(`/api/chat?chatId=${cid}`, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        "x-user-id": user?.id || "",
       },
     });
 
@@ -68,7 +68,7 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "x-user-id": user?.id || "",
         },
         body: JSON.stringify({ chatId, message: userMessage }),
       });
@@ -117,6 +117,7 @@ export default function Home() {
 
     (async () => {
       const stored = JSON.parse(localStorage.getItem("user") || "{}") as {
+        id?: string;
         username?: string;
         chats?: string[];
       };

@@ -74,7 +74,7 @@ function getSessionIdCookie(req: Request): string | null {
 
 function setSessionIdCookie(sessionId: string) {
   const maxAge = 60 * 60 * 24 * 365;
-  return `SESSION_COOKIE=${SESSION_COOKIE}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Value=${sessionId}`;
+  return `${SESSION_COOKIE}=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
 }
 
 export async function POST(req: Request) {

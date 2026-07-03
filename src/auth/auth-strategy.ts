@@ -37,8 +37,8 @@ passport.use(
           return done(null, { username, id: newUser._id, token });
         } else {
           //Login
-          const hashedPassword = await bcrypt.hash(password, user.salt);
-          if (hashedPassword !== user.password) {
+          const hashedPassword = await bcrypt.compare(password, user.password);
+          if (!hashedPassword) {
             return done(null, false, { message: "Authentication failed" });
           }
           // return done(null, user);
