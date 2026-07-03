@@ -31,6 +31,12 @@ export default function Home() {
   const [limitDialog, setLimitDialog] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    window.location.href = "/auth";
+  };
+
   const loadChat = async (cid: string) => {
     const token = localStorage.getItem("authToken");
     if (!token) return;
@@ -41,6 +47,10 @@ export default function Home() {
       },
     });
 
+    if (res.status === 401) {
+      handleLogout();
+      return;
+    }
     if (!res.ok) return;
     const data = (await res.json()) as Array<{ role: string; content: string }>;
     const filtered = data
@@ -71,6 +81,12 @@ export default function Home() {
           },
           body: JSON.stringify({ chatId: null }),
         });
+
+        if (createRes.status === 401) {
+          handleLogout();
+          setIsLoading(false);
+          return;
+        }
 
         if (createRes.status === 403) {
           const payload = await createRes.json().catch(() => ({}));
@@ -115,6 +131,12 @@ export default function Home() {
         },
         body: JSON.stringify({ chatId: targetChatId, message: userMessage }),
       });
+
+      if (response.status === 401) {
+        handleLogout();
+        setIsLoading(false);
+        return;
+      }
 
       if (response.status === 403) {
         const payload = await response.json().catch(() => ({}));
