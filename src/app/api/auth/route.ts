@@ -7,14 +7,14 @@ const authenticate = async (req: Request) => {
   console.log("HI2", body);
 
   return new Promise((resolve, reject) => {
-    //@ts-ignore
+    //@ts-expect-error Passport types might complain about mock req
     Passport.authenticate("local", { session: false }, (err, user, info) => {
       console.log("error", err, user, info);
 
       if (err) return reject(err);
       if (!user) return reject(new Error("Authentication failed"));
       resolve(user);
-    })({ body } as any);
+    })({ body } as unknown as import("http").IncomingMessage);
   });
 };
 
@@ -26,9 +26,9 @@ export async function POST(req: Request) {
       success: true,
       user: userAuth,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, message: (error as Error).message },
       { status: 401 }
     );
   }

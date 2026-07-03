@@ -1,43 +1,65 @@
 "use client";
 
-import { Ref, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { LogOut, Send, Square, StopCircle } from "lucide-react";
-import axios from "axios";
-import ReactMarkdown from "react-markdown";
+import { Send } from "lucide-react";
 import Profile from "@/components/profile";
+import ReactMarkdown from "react-markdown";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Message {
   content: string;
   isUser: boolean;
 }
 
-const axiosInstance = axios.create();
-
 export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [chatId, setChatId] = useState(null);
-  const [user, setUser] = useState<null | any>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [user, setUser] = useState<{ username?: string; chats?: string[] } | null>(null);
   const [streamedMessage, setStreamedMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [limitDialog, setLimitDialog] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
 
-  const handleScroll = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    setIsUserAtBottom(nearBottom);
+  const loadChat = async (cid: string) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+    const res = await fetch(`/api/chat?chatId=${cid}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) return;
+    const data = (await res.json()) as Array<{ role: string; content: string }>;
+    const filtered = data
+      .filter((m) => m.role !== "system")
+      .map((m) => ({ ...m, isUser: m.role === "user" }));
+    setMessages(filtered);
   };
 
   const handleSend = async () => {
-    if (input.trim() === "") return;
+    if (input.trim() === "" || !chatId) return;
 
-    setMessages([...messages, { content: input, isUser: true }]);
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      window.location.href = "/auth";
+      return;
+    }
+
+    const userMessage = input;
+    setMessages((p) => [...p, { content: userMessage, isUser: true }]);
     setInput("");
     setIsLoading(true);
 
@@ -46,13 +68,27 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ chatId, message: input }),
+        body: JSON.stringify({ chatId, message: userMessage }),
       });
-      setIsLoading(false);
+
+      if (response.status === 403) {
+        const payload = await response.json().catch(() => ({}));
+        if (payload?.message === "Limit Reached") {
+          setLimitDialog(true);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       setIsStreaming(true);
-      if (response.body === null) return;
+      if (!response.body) {
+        setIsStreaming(false);
+        setIsLoading(false);
+        return;
+      }
+
       const reader = response.body
         .pipeThrough(new TextDecoderStream())
         .getReader();
@@ -63,143 +99,60 @@ export default function Home() {
           setStreamedMessage((p) => p + value);
         }
       }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
       setIsStreaming(false);
-    } catch (error) {
-      console.error("Error sending message:", error);
-    } finally {
       setIsLoading(false);
       setInput("");
     }
   };
-
-  const createNewChat = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axiosInstance.post(`/api/chat`, {});
-
-      setMessages([
-        { content: response.data.messages[1].content, isUser: false },
-      ]);
-      // localStorage.setItem("user", response.data.chatId);
-      console.log(response.data);
-
-      return response.data._id;
-    } catch (error) {
-      console.error("Error sending message:", error);
-    } finally {
-      setIsLoading(false);
-      setInput("");
-    }
-  };
-
-  const getChat = async (chatId: string) => {
-    try {
-      const response = await fetch(`/api/chat?chatId=${chatId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch chat messages");
-      }
-
-      const data = await response.json();
-      const filteredMessages = data
-        .filter((message: any) => message.role !== "system")
-        .map((message: any) => ({
-          ...message,
-          isUser: message.role === "user",
-        }));
-      setMessages(filteredMessages);
-    } catch (error) {
-      console.error("Error fetching chat:", error);
-    }
-  };
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", handleScroll);
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    console.log(el?.scrollHeight);
-
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages, streamedMessage, isLoading]);
-
-  useEffect(() => {
-    if (!isStreaming && streamedMessage) {
-      setMessages((p) => [...p, { content: streamedMessage, isUser: false }]);
-      setStreamedMessage("");
-    }
-  }, [isStreaming, streamedMessage]);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) {
       window.location.href = "/auth";
+      return;
     }
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    console.log(user, token);
 
-    if (token) {
-      axiosInstance.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${token}`;
-    }
-    if (user) {
-      if (!user.chats?.length) {
-        (async () => {
-          const newChatID = await createNewChat();
-          setChatId(newChatID);
-          localStorage.setItem(
-            "user",
-            JSON.stringify({ ...user, chats: [newChatID] })
-          ); // Update the user object with the new chatId and save it to localStorage
-          setUser({ ...user, chats: [newChatID] }); // Update the user object with the new chatId and save it to localStorage
-        })();
-      } else {
-        console.log(user);
-        const latestChat = user.chats[user.chats.length - 1];
-        getChat(latestChat);
+    (async () => {
+      const stored = JSON.parse(localStorage.getItem("user") || "{}") as {
+        username?: string;
+        chats?: string[];
+      };
+      const chats = stored.chats || [];
+      const lastChat = chats.slice().reverse().find((id: string) => id);
 
-        setUser(user);
-        setChatId(latestChat);
+      if (lastChat) {
+        await loadChat(lastChat);
+        setChatId(lastChat);
       }
-    }
-
-    return () => {
-      delete axiosInstance.defaults.headers.common["Authorization"];
-    };
+      setUser(stored);
+    })();
   }, []);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, streamedMessage, isLoading]);
+
   return (
-    <div className=" relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      <Profile username={user?.username} />
-      <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto md:p-8 relative ">
-        <Card className="flex flex-col h-full border-2  transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
+    <div className="relative flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <Profile username={user?.username || ""} />
+      <div className="flex-1 overflow-hidden w-full max-w-3xl mx-auto md:p-8 relative">
+        <Card className="flex flex-col h-full border-2 transition-all duration-300 animate-border-pulse bg-gradient-to-b from-transparent to-green-50 dark:to-green-900/30 animate-glow-pulse">
           <div
             className="flex-1 overflow-y-auto p-4 space-y-4"
             ref={containerRef}
           >
             {messages.length === 0 ? (
-              <p className="text-center text-gray-500 pt-8">
-                Send a message to start chatting
-              </p>
+              <p className="text-center text-gray-500 pt-8">Send a message to start chatting</p>
             ) : (
               messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${
-                    message.isUser ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
                 >
                   <div
                     className={`max-w-[80%] p-4 rounded-lg text-wrap ${
@@ -208,33 +161,15 @@ export default function Home() {
                         : "bg-muted text-muted-foreground rounded-tl-none"
                     }`}
                   >
-                    <ReactMarkdown
-                      components={{
-                        pre: ({ node, ...props }) => (
-                          <pre
-                            className="whitespace-pre-wrap overflow-x-auto break-words"
-                            {...props}
-                          />
-                        ),
-                        code: ({ node, ...props }) => (
-                          <code
-                            className="whitespace-pre-wrap break-words"
-                            {...props}
-                          />
-                        ),
-                      }}
-                      children={message.content}
-                    />
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
                   </div>
                 </div>
               ))
             )}
             {streamedMessage && (
-              <div className={`flex justify-start`}>
-                <div
-                  className={`max-w-[80%] p-4 rounded-lg bg-muted text-muted-foreground rounded-tl-none`}
-                >
-                  <ReactMarkdown children={streamedMessage} />
+              <div className="flex justify-start">
+                <div className="max-w-[80%] p-4 rounded-lg bg-muted text-muted-foreground rounded-tl-none">
+                  <ReactMarkdown>{streamedMessage}</ReactMarkdown>
                 </div>
               </div>
             )}
@@ -258,24 +193,34 @@ export default function Home() {
               placeholder="Type your message..."
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               className="flex-1"
-              disabled={isLoading}
+              disabled={isLoading || limitDialog}
             />
             <Button
               onClick={handleSend}
-              disabled={isLoading || input.trim() === "" || isStreaming}
+              disabled={isLoading || input.trim() === "" || isStreaming || limitDialog}
               className="bg-background disabled:opacity-50"
               size="icon"
             >
               <Send className="h-5 w-5 text-primary" color="#10a37f" />
-              {/* {isLoading ? (
-                <Square className="h-5 w-5 text-primary" color="#10a37f" />
-              ) : (
-                <Send className="h-5 w-5 text-primary" color="#10a37f" />
-              )} */}
             </Button>
           </div>
         </Card>
       </div>
+
+      <Dialog open={limitDialog} onOpenChange={setLimitDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Limit Reached</DialogTitle>
+            <DialogDescription>
+              You have used the available limit. This session allows only 3 requests/messages. To continue
+              chatting, log in again or create a new account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button onClick={() => setLimitDialog(false)}>OK</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -16,13 +16,25 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
-    chats: [{
-      type: Schema.Types.ObjectId,
-      ref: "Chat"
-    }]
+    chats: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Chat",
+      },
+    ],
+    usedChatCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    sessionChatCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt automatically
+    timestamps: true,
   }
 );
 

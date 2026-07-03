@@ -65,7 +65,11 @@ passport.use(
 
       try {
         const user = await User.findOne({ username: jwtPayload.username });
-        user ? done(null, user) : done(null, false);
+        if (user) {
+          done(null, user);
+        } else {
+          done(null, false);
+        }
       } catch (err) {
         done(err, false);
       }

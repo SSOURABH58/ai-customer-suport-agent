@@ -22,10 +22,14 @@ const ChatSchema = new Schema(
       ref: "User",
       required: true,
     },
+    model: {
+      type: String,
+      default: "openrouter/auto",
+    },
     messages: [MessageSchema],
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt automatically
+    timestamps: true,
   }
 );
 
